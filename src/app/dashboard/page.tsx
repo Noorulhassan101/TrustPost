@@ -3,11 +3,12 @@
 import { useAuth } from "@/components/providers/auth-provider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LogOut } from "lucide-react";
-import { auth, db, functions } from "@/lib/firebase/config";
+import { auth, db } from "@/lib/firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { httpsCallable } from "firebase/functions";
+import { collection, writeBatch, serverTimestamp } from "firebase/firestore";
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
@@ -49,11 +50,40 @@ export default function DashboardPage() {
         setError("");
 
         try {
-            const createCompanyFn = httpsCallable(functions, "createCompany");
-            await createCompanyFn({ name: companyName, country, currency });
-            setNeedsCompany(false);
+            const batch = writeBatch(db);
+            const companyRef = doc(collection(db, "companies"));
+            const companyId = companyRef.id;
+
+            // 1. Create the company doc
+            batch.set(companyRef, {
+                name: companyName,
+                country,
+                currency,
+                createdAt: serverTimestamp()
+            });
+
+            // 2. Add the user as an admin member of the company
+            batch.set(doc(db, "companies", companyId, "members", user!.uid), {
+                uid: user!.uid,
+                role: "admin",
+                joinedAt: serverTimestamp()
+            });
+
+            // 3. Update the user's profile with the new company ID
+            batch.set(doc(db, "users", user!.uid), {
+                email: user!.email,
+                name: user!.displayName || "Unknown User",
+                companyId: companyId,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+
+            await batch.commit();
+
+            // Force a reload of the window to let the AuthProvider fetch the new companyId
+            window.location.reload();
         } catch (err: unknown) {
-            setError((err as Error).message);
+            console.error(err);
+            setError((err as Error).message || "Failed to create company");
         } finally {
             setProcessing(false);
         }
@@ -145,8 +175,9 @@ export default function DashboardPage() {
                 <div className="p-6">
                     <h1 className="text-2xl font-bold text-gray-900">EntryAI</h1>
                 </div>
-                <nav className="mt-6 px-4">
-                    <div className="bg-blue-50 text-blue-700 px-4 py-3 rounded-lg font-medium">Dashboard</div>
+                <nav className="mt-6 px-4 space-y-2">
+                    <Link href="/dashboard" className="block bg-blue-50 text-blue-700 px-4 py-3 rounded-lg font-medium transition">Dashboard</Link>
+                    <Link href="/documents" className="block text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">Documents</Link>
                 </nav>
             </aside>
 

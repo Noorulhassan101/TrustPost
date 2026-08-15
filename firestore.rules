@@ -14,15 +14,18 @@ service cloud.firestore {
     }
     
     match /companies/{companyId} {
+      allow create: if request.auth != null;
       // Only members can read the core company data
       allow read: if isCompanyMember(companyId);
-      // All creation and management of core company attributes occurs via Cloud Functions
-      allow write: if false; 
+      // All other modifications require server logic or admin paths
+      allow update, delete: if false; 
       
       match /members/{memberId} {
         // Members can see who else is in the company
         allow read: if isCompanyMember(companyId);
-        allow write: if false;
+        // Allow founders to join the company during setup
+        allow create: if request.auth != null && request.auth.uid == memberId;
+        allow update, delete: if false;
       }
       
       match /connections/{connectionId} {

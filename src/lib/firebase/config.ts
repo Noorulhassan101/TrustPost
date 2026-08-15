@@ -8,7 +8,7 @@ const firebaseConfig = {
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-entryai-test",
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "fake-api-key",
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "localhost",
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "localhost",
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "demo-entryai-test.appspot.com",
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123",
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "123",
 };
@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === "development") {
         connectFirestoreEmulator(db, "127.0.0.1", 8080);
         connectFunctionsEmulator(functions, "127.0.0.1", 5001);
         connectStorageEmulator(storage, "127.0.0.1", 9199);
-    } catch (_e) {
+    } catch {
         // Ignored. Emulators already connected
     }
 }
