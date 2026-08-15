@@ -5,7 +5,7 @@ This document defines the architecture and tech stack for the MVP. **Firebase is
 ## 1. Constraints (Hard)
 
 - No new paid subscriptions beyond existing ones (Gemini Pro, etc.) without a hard, tested budget alert in place first (see §8).
-- Free tiers first, for hosting, database, storage, auth, AI/OCR — small capped overage (Blaze plan) is allowed once budget alerts are proven to work.
+- Free tiers first, for hosting, database, storage, auth, AI/OCR — small capped overage (Spark plan (Free tier)) is allowed once budget alerts are proven to work.
 - Must be buildable by **one CS student** in ~8–10 weeks part‑time (extended from the original 6–8 weeks to account for production hardening).
 - Architecture should be **simple**, not microservices — but must include the environment separation, secrets handling, and CI/CD described below, since these are what make "simple" also "safe."
 
@@ -19,7 +19,7 @@ Three environments, each backed by its own Firebase project:
 
 | Environment | Firebase project | Purpose |
 |---|---|---|
-| `dev` | local emulator suite (Auth, Firestore, Storage, Functions emulators) | day-to-day development, no real data, no real spend |
+| `dev` | local emulator suite (Auth, Firestore, Storage emulators) | day-to-day development, no real data, no real spend |
 | `staging` | `entryai-staging` | mirrors production config; every change is deployed and smoke-tested here first; safe to use fake connector sandboxes (QBO sandbox, a test Google Sheet) |
 | `production` | `entryai-prod` | real customer data |
 
@@ -31,9 +31,9 @@ Managed via `.firebaserc` project aliases (`dev`/`staging`/`production` mapped t
 
 Simple **3‑tier architecture**, unchanged in shape from the original plan:
 
-1. **Frontend + Backend** – Next.js app (UI, auth, document upload, review) using the Firebase SDK on the client and Firebase Admin SDK in Cloud Functions.
+1. **Frontend + Backend** – Next.js app (UI, auth, document upload, review) using the Firebase SDK on the client and Firebase Admin SDK in Next.js API Routes.
 2. **Firebase Services** – Auth (email/password + Google), Firestore (main DB), Storage (raw files), Hosting (deploys Next.js).
-3. **AI** – Gemini Pro API called from Cloud Functions only (never from the client).
+3. **AI** – Gemini Pro API called from Next.js API Routes only (never from the client).
 
 ### Logical Diagram (Text)
 
@@ -48,9 +48,9 @@ Simple **3‑tier architecture**, unchanged in shape from the original plan:
    - Review UI (incl. duplicate warnings)
    - Logs UI
    |
-   | Callable Cloud Functions
+   | Callable Next.js API Routes
    v
-[Backend: Firebase Cloud Functions, Node.js/TypeScript]
+[Backend: Firebase Next.js API Routes, Node.js/TypeScript]
    - Auth & company management (Firebase Admin SDK)
    - Document upload handling (Storage + Firestore)
    - Duplicate fingerprinting
@@ -66,7 +66,7 @@ Simple **3‑tier architecture**, unchanged in shape from the original plan:
    +--> [Cloud Billing Budgets]        spend alerts
 ```
 
-**Backend approach:** Cloud Functions for Firebase (Node.js/TypeScript), using **v2 functions with `defineSecret`** for anything sensitive (see §7). Frontend calls these via callable functions. Secrets never reach the client; Firestore never stores plaintext credentials.
+**Backend approach:** Next.js API Routes (Node.js/TypeScript), using **v2 functions with `defineSecret`** for anything sensitive (see §7). Frontend calls these via callable functions. Secrets never reach the client; Firestore never stores plaintext credentials.
 
 ---
 
@@ -77,7 +77,7 @@ Simple **3‑tier architecture**, unchanged in shape from the original plan:
 - Next.js (App Router) + TypeScript, Tailwind CSS + shadcn/ui.
 - Firebase Auth (email/password + Google). Firebase Hosting.
 
-### 4.2 Backend – Firebase Cloud Functions (v2)
+### 4.2 Backend – Firebase Next.js API Routes (v2)
 
 Functions, all TypeScript, all with server-side auth + company-ownership checks:
 
@@ -99,7 +99,7 @@ Collections: `users`, `companies`, `companyUsers` (or `members` subcollection), 
 
 ### 4.5 AI / OCR
 
-Gemini Pro (vision) via Cloud Functions only. `processDocument`:
+Gemini Pro (vision) via Next.js API Routes only. `processDocument`:
 
 1. Downloads file from Storage.
 2. Checks the **global daily/monthly AI-call circuit breaker** (§8) before calling out — if tripped, sets `documents.status = quota_exceeded` instead of erroring silently, and the doc is retried once quota resets.
@@ -112,7 +112,7 @@ Gemini Pro (vision) via Cloud Functions only. `processDocument`:
 
 ### 4.6 Connectors
 
-`/functions/src/connectors/{sheets,quickbooks,tally}.ts`, common interface:
+`/src/app/api/connectors/{sheets,quickbooks,tally}.ts`, common interface:
 
 ```ts
 interface Connector {
@@ -150,7 +150,7 @@ Note: there is no separate `lastIdempotencyKey` field. The idempotency key for a
 ### `companies/{companyId}/logs/{logId}`
 `documentId`, `userId`, `action` ("uploaded" | "reviewed" | "posted" | "duplicate_acknowledged" | "error" | "deleted"), `details`, `createdAt`
 
-Firestore security rules enforce company isolation: a user may only read/write documents where their `companyId` matches. Cloud Functions using the Admin SDK bypass rules but must re-implement the same check in code on every call — this is not optional and should be a shared helper (`assertCompanyMember(uid, companyId)`) used by every function.
+Firestore security rules enforce company isolation: a user may only read/write documents where their `companyId` matches. Next.js API Routes using the Admin SDK bypass rules but must re-implement the same check in code on every call — this is not optional and should be a shared helper (`assertCompanyMember(uid, companyId)`) used by every function.
 
 ---
 
@@ -174,7 +174,7 @@ Firestore security rules enforce company isolation: a user may only read/write d
 
 - Firebase Auth for all users; every Cloud Function verifies `context.auth` and calls `assertCompanyMember`.
 - Firestore security rules restrict reads/writes to the caller's own `companyId`.
-- **Secrets management**: Gemini API key and all connector OAuth client secrets/tokens are stored in **Google Cloud Secret Manager**, referenced in Cloud Functions v2 via `defineSecret(...)` — never as plain `functions:config` values, never in Firestore, never in `.env` files committed to the repo. `.env.example` in the repo contains only placeholder names, no real values, and a comment pointing to Secret Manager setup instructions.
+- **Secrets management**: Gemini API key and all connector OAuth client secrets/tokens are stored in **Google Cloud Secret Manager**, referenced in Next.js API Routes v2 via `defineSecret(...)` — never as plain `functions:config` values, never in Firestore, never in `.env` files committed to the repo. `.env.example` in the repo contains only placeholder names, no real values, and a comment pointing to Secret Manager setup instructions.
 - Per-company connector credentials (e.g., a customer's QBO refresh token) are also stored in Secret Manager, one secret per connection, referenced from Firestore by name only (`connections.{type}.secretRef`).
 - No credentials or PII are ever logged (`console.log`) — code review checklist item.
 
@@ -236,8 +236,8 @@ This gives you a real staging→production gate without adding infrastructure be
 ## 13. Deployment Plan
 
 - Repo: GitHub (private).
-- Firebase projects: `entryai-staging`, `entryai-prod`, plus local emulators for `dev`. All three enable Auth, Firestore, Storage, Hosting, Functions.
-- `.firebaserc` defines the three aliases; `firebase deploy --only hosting,functions,firestore --project staging|production` used explicitly (never deploy without `--project`).
+- Firebase projects: `entryai-staging`, `entryai-prod`, plus local emulators for `dev`. All three enable Auth, Firestore, Storage, Hosting.
+- `.firebaserc` defines the three aliases; `firebase deploy --only hosting,firestore --project staging|production` used explicitly (never deploy without `--project`).
 - Local: Firebase CLI + emulator suite for day-to-day dev; no real secrets needed locally (use emulator-local fake keys or a personal Gemini sandbox key stored outside the repo).
 - CI: GitHub Actions as described in §11.
 - `.env.example` documents secret **names** only; actual values live in Secret Manager per environment.

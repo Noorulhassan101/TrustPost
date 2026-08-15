@@ -98,7 +98,7 @@ The core entity. Extracted data lives directly on this document — there is **n
 ## Security Rules (summary)
 
 - Every collection under `companies/{companyId}/...` is readable/writable only by users whose `companyId` matches.
-- Cloud Functions use the Admin SDK, which bypasses rules — every function must re-implement the same check in code via a shared `assertCompanyMember(uid, companyId)` helper. This is not optional.
+- Next.js API Routes use the Admin SDK, which bypasses rules — every function must re-implement the same check in code via a shared `assertCompanyMember(uid, companyId)` helper. This is not optional.
 - Secrets (`secretRef` targets) live in Secret Manager, never in Firestore, never in client code, never logged.
 
 ---

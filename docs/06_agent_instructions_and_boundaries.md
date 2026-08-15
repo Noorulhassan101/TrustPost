@@ -29,7 +29,7 @@ You are **not** the product owner. The human is.
 
 ## Hard Constraints (Never Violate)
 
-1. **Firebase only.** The backend is Firebase (Auth, Firestore, Storage, Cloud Functions, Hosting) across `dev` (emulators), `staging`, and `production` projects. Never propose Supabase, a custom Postgres/Node server, or any other backend platform for this project.
+1. **Firebase only.** The backend is Firebase (Auth, Firestore, Storage, Next.js API Routes, Hosting) across `dev` (emulators), `staging`, and `production` projects. Never propose Supabase, a custom Postgres/Node server, or any other backend platform for this project.
 
 2. **No uncontrolled paid services.** Free tiers first. Any paid usage must come with a Cloud Billing budget alert already configured and tested — never propose a paid feature without also specifying the alert.
 
@@ -67,7 +67,7 @@ You are **not** the product owner. The human is.
 ## Code Style & Structure
 
 - TypeScript for frontend and backend.
-- Keep files small and focused: `/app` or `/pages` for UI, `/functions/src` for Cloud Functions, `/functions/src/connectors` for connector implementations, `/lib` for shared utilities (AI calls, fingerprinting, idempotency helpers, `assertCompanyMember`), `/components` for reusable UI.
+- Keep files small and focused: `/app` or `/pages` for UI, `/src/app/api` for Next.js API Routes, `/src/app/api/connectors` for connector implementations, `/lib` for shared utilities (AI calls, fingerprinting, idempotency helpers, `assertCompanyMember`), `/components` for reusable UI.
 - Add minimal comments where logic is non-obvious (especially around idempotency and duplicate matching — these are easy to subtly break).
 - Every Cloud Function that touches company data uses the shared `assertCompanyMember` helper — never re-implement the check inline.
 - Avoid over-engineering; prefer straightforward solutions that still meet the reliability bar.

@@ -10,7 +10,7 @@
 - Web app only (desktop browser).
 - Support **one document type per flow**: Invoices → Accounting/Sheets, Receipts → Accounting/Sheets.
 - Support **one integration per company** in MVP: QuickBooks Online (US), or Tally (Pakistan), or Google Sheets (both).
-- Stack: **Firebase** (Auth, Firestore, Storage, Cloud Functions, Hosting) — see `04_technical_requirements_and_architecture.md`. This is the single source of truth for backend decisions; no other stack should be considered.
+- Stack: **Firebase** (Auth, Firestore, Storage, Next.js API Routes, Hosting) — see `04_technical_requirements_and_architecture.md`. This is the single source of truth for backend decisions; no other stack should be considered.
 
 Everything else is out of scope for MVP.
 
@@ -60,7 +60,7 @@ For MVP, assume **one user per company** to simplify.
 
 - FR‑1: Support email/password + Google OAuth login (Firebase Auth).
 - FR‑2: Each user belongs to one company (MVP).
-- FR‑3: Company has: name, country (US/PK), currency (USD/PKR), connected system type (QBO/Tally/Sheets), connection credentials (stored via Cloud Functions secrets, never client-side).
+- FR‑3: Company has: name, country (US/PK), currency (USD/PKR), connected system type (QBO/Tally/Sheets), connection credentials (stored via Next.js API Routes secrets, never client-side).
 
 ### 4.2 Document Upload & Storage
 
@@ -130,10 +130,10 @@ For MVP, assume **one user per company** to simplify.
 - NFR‑3: **Security**
   - All endpoints protected by authentication; caller identity verified server-side on every Cloud Function.
   - Company data isolated (no cross‑company access) — enforced in both Firestore rules and function-level checks.
-  - Credentials/tokens for connectors stored via a secrets mechanism (Cloud Secret Manager, referenced by Cloud Functions), never in Firestore in plaintext, never in client code or logs.
+  - Credentials/tokens for connectors stored via a secrets mechanism (Cloud Secret Manager, referenced by Next.js API Routes), never in Firestore in plaintext, never in client code or logs.
 
 - NFR‑4: **Cost**
-  - MVP must run within free tiers where possible; any paid usage (e.g., Blaze plan overage, Gemini calls) must have a **hard budget alert** configured before onboarding any real user (see technical doc §8).
+  - MVP must run within free tiers where possible; any paid usage (e.g., Spark plan (Free tier) overage, Gemini calls) must have a **hard budget alert** configured before onboarding any real user (see technical doc §8).
   - AI usage capped per company (e.g., max 500 docs/month in free beta) enforced server-side, not just tracked.
   - A daily/monthly global cap on AI calls exists as a circuit breaker independent of per-company caps, to prevent a bug from generating runaway spend.
 

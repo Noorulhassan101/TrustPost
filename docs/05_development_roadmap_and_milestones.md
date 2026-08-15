@@ -15,9 +15,9 @@ Assumptions: 10–15 hours/week, basic web dev already known, Firebase learned a
 **Tasks:**
 
 1. Create GitHub repo `entryai`.
-2. Create **two** Firebase projects: `entryai-staging` and `entryai-prod`. Enable Auth, Firestore, Storage, Hosting, Functions on both. Set up local emulator suite for `dev`.
+2. Create **two** Firebase projects: `entryai-staging` and `entryai-prod`. Enable Auth, Firestore, Storage, Hosting on both. Set up local emulator suite for `dev`.
 3. Configure `.firebaserc` with `staging`/`production` project aliases.
-4. Install Firebase CLI, `firebase init` (Hosting + Functions + Firestore) targeting both projects.
+4. Install Firebase CLI, `firebase init` (Hosting + Firestore) targeting both projects.
 5. Create Next.js app (TypeScript, App Router).
 6. Set up **Google Cloud Secret Manager** on both projects; add placeholder secrets for the Gemini API key (real value only in staging/prod, not committed anywhere).
 7. Write initial docs: copy all `.md` files into `docs/`.

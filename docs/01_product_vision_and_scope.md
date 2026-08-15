@@ -155,7 +155,7 @@ If any of these cannot be met with current constraints, **reduce feature scope f
 
 These are non‑negotiable for the agent:
 
-1. **No new paid subscriptions** beyond existing ones (Gemini Pro, etc.) without explicit approval. A small, capped, alerted spend (e.g., Firebase Blaze plan with a hard budget alert) is allowed — see §8 of the technical doc — but must never be open-ended.
+1. **No new paid subscriptions** beyond existing ones (Gemini Pro, etc.) without explicit approval. A small, capped, alerted spend (e.g., Firebase Spark plan (Free tier) with a hard budget alert) is allowed — see §8 of the technical doc — but must never be open-ended.
 2. Use free tiers first for hosting, database, storage, and AI/OCR; only exceed them with an explicit, logged decision and a budget alert in place.
 3. Do **not** design for millions of users or massive scale. Design for the first **50–100 companies**, each processing up to **1,000 docs/month**. Simple, monolithic‑ish architecture that can be refactored later.
 4. Do **not** add product features that are not required for the MVP scope above. Production-hardening work (CI/CD, staging, monitoring, secrets management, idempotency, duplicate detection, backups) is **in scope** and is not a "feature" for the purposes of this rule.
