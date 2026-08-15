@@ -118,9 +118,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             alert("Successfully posted to Google Sheets!");
             setDocumentEntry({ ...documentEntry, status: "posted", externalRecordId: result.updatedRange || "posted" });
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e);
-            alert(e.message || "Failed to post to Google Sheets");
+            alert(e instanceof Error ? e.message : "Failed to post to Google Sheets");
         } finally {
             setPosting(false);
         }
@@ -187,7 +187,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                                 <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                                 <div>
                                     <h3 className="text-sm font-bold text-red-800">Extraction Failed</h3>
-                                    <p className="text-xs text-red-700 mt-1">We couldn't automatically read data from this file. You'll need to enter it manually below.</p>
+                                    <p className="text-xs text-red-700 mt-1">We couldn&apos;t automatically read data from this file. You&apos;ll need to enter it manually below.</p>
                                 </div>
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { uploadBytesResumable, getDownloadURL, ref } from "firebase/storage";
 import { collection, doc, setDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { storage, db } from "@/lib/firebase/config";

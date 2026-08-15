@@ -40,9 +40,9 @@ export async function testConnection(spreadsheetId: string) {
             return { success: true, title: response.data.properties?.title };
         }
         return { success: false, error: "Failed to access spreadsheet" };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Sheets Test Connection Error:", error);
-        return { success: false, error: error.message || "Failed to access spreadsheet" };
+        return { success: false, error: error instanceof Error ? error.message : "Failed to access spreadsheet" };
     }
 }
 
@@ -105,8 +105,8 @@ export async function postRecord(doc: DocumentEntry, spreadsheetId: string) {
         }
         return { success: false, error: "Failed to append to spreadsheet" };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Sheets Post Error:", error);
-        return { success: false, error: error.message || "Failed to post to spreadsheet" };
+        return { success: false, error: error instanceof Error ? error.message : "Failed to post to spreadsheet" };
     }
 }

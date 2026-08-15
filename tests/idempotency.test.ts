@@ -10,7 +10,7 @@ vi.mock("@/app/actions/sheets", () => ({
 // Natively simulating the React handler double-click issue:
 
 describe("Idempotent Document Posting", () => {
-    let mockPostRecord: any;
+    let mockPostRecord: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
         vi.clearAllMocks();
@@ -25,7 +25,7 @@ describe("Idempotent Document Posting", () => {
             externalRecordId: "Sheet1!A2:E2" // Already posted
         };
 
-        const executePostWithChecks = async (doc: any) => {
+        const executePostWithChecks = async (doc: { externalRecordId?: string | null }) => {
             // This mirrors the UI logic natively
             if (doc.externalRecordId) {
                 return { success: false, error: "ALREADY_POSTED" };
@@ -49,7 +49,7 @@ describe("Idempotent Document Posting", () => {
 
         mockPostRecord.mockResolvedValue({ success: true, updatedRange: "Sheet1!A3:E3" });
 
-        const executePostWithChecks = async (doc: any) => {
+        const executePostWithChecks = async (doc: { externalRecordId?: string | null }) => {
             if (doc.externalRecordId) {
                 return { success: false, error: "ALREADY_POSTED" };
             }
