@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as admin from "firebase-admin";
 import * as fft from "firebase-functions-test";
 import { createCompany } from "../src/companies";

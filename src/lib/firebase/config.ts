@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === "development") {
         connectFirestoreEmulator(db, "127.0.0.1", 8080);
         connectFunctionsEmulator(functions, "127.0.0.1", 5001);
         connectStorageEmulator(storage, "127.0.0.1", 9199);
-    } catch (e) {
+    } catch (_e) {
         // Ignored. Emulators already connected
     }
 }

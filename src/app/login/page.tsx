@@ -30,8 +30,8 @@ export default function LoginPage() {
             const provider = new GoogleAuthProvider();
             await signInWithPopup(auth, provider);
             router.push("/dashboard");
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError((err as Error).message);
         } finally {
             setProcessing(false);
         }
@@ -58,8 +58,8 @@ export default function LoginPage() {
 
                 router.push("/dashboard");
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError((err as Error).message);
         } finally {
             setProcessing(false);
         }

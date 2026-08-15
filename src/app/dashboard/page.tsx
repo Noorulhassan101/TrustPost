@@ -23,25 +23,25 @@ export default function DashboardPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
+        const verifyCompany = async () => {
+            try {
+                const userDoc = await getDoc(doc(db, "users", user!.uid));
+                if (!userDoc.exists() || !userDoc.data().companyId) {
+                    setNeedsCompany(true);
+                }
+            } catch (err: unknown) {
+                console.error(err);
+            } finally {
+                setVerifying(false);
+            }
+        };
+
         if (!loading && !user) {
             router.push("/login");
         } else if (user) {
             verifyCompany();
         }
-    }, [user, loading]);
-
-    const verifyCompany = async () => {
-        try {
-            const userDoc = await getDoc(doc(db, "users", user!.uid));
-            if (!userDoc.exists() || !userDoc.data().companyId) {
-                setNeedsCompany(true);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setVerifying(false);
-        }
-    };
+    }, [user, loading, router]);
 
     const handleCreateCompany = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,8 +52,8 @@ export default function DashboardPage() {
             const createCompanyFn = httpsCallable(functions, "createCompany");
             await createCompanyFn({ name: companyName, country, currency });
             setNeedsCompany(false);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError((err as Error).message);
         } finally {
             setProcessing(false);
         }
@@ -78,7 +78,7 @@ export default function DashboardPage() {
             <div className="flex h-screen w-full items-center justify-center bg-gray-50">
                 <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border border-gray-100">
                     <h2 className="text-xl font-bold text-gray-900 mb-2">Complete Setup</h2>
-                    <p className="text-sm text-gray-600 mb-6">You signed in with Google! Let's get your company workspace set up.</p>
+                    <p className="text-sm text-gray-600 mb-6">You signed in with Google! Let&apos;s get your company workspace set up.</p>
 
                     {error && (
                         <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm border border-red-200">
