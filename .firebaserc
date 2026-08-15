@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "staging": "entryai-staging",
+    "production": "entryai-prod"
+  }
+}

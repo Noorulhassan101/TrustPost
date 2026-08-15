@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install root dependencies (Next.js)
+      run: npm install
+
+    - name: Lint Next.js
+      run: npm run lint
+
+    - name: Typecheck Next.js
+      run: npx tsc --noEmit
+
+    - name: Install Functions dependencies
+      working-directory: ./functions
+      run: npm install
+
+    - name: Build Functions
+      working-directory: ./functions
+      run: npm run build
+
+    - name: Setup Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Test Functions
+      working-directory: ./functions
+      run: npm run test
+
+  deploy-staging:
+    needs: build
+    # Only run this job if pushing to main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install root dependencies
+      run: npm install
+
+    - name: Install Functions dependencies
+      working-directory: ./functions
+      run: npm install
+
+    - name: Setup Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Deploy to Staging
+      # It is expected that this will fail until the Blaze Plan is purchased.
+      # You must add FIREBASE_TOKEN to GitHub Secrets.
+      run: firebase deploy --project entryai-staging --force
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
