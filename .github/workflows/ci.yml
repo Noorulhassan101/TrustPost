@@ -27,31 +27,4 @@ jobs:
     - name: Typecheck Next.js
       run: npx tsc --noEmit
 
-  deploy-staging:
-    needs: build
-    # Only run this job if pushing to main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
-        cache: 'npm'
 
-    - name: Install root dependencies
-      run: npm install
-
-    - name: Setup Firebase CLI
-      run: npm install -g firebase-tools
-
-    - name: Enable webframeworks
-      run: firebase experiments:enable webframeworks
-
-    - name: Deploy to Staging
-      # You must add FIREBASE_TOKEN to GitHub Secrets.
-      run: firebase deploy --project entryai-staging --force
-      env:
-        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
