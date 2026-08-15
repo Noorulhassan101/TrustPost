@@ -178,6 +178,7 @@ export default function DashboardPage() {
                 <nav className="mt-6 px-4 space-y-2">
                     <Link href="/dashboard" className="block bg-blue-50 text-blue-700 px-4 py-3 rounded-lg font-medium transition">Dashboard</Link>
                     <Link href="/documents" className="block text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">Documents</Link>
+                    <Link href="/settings/connections" className="block text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">Connections</Link>
                 </nav>
             </aside>
 

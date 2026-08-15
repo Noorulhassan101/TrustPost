@@ -29,8 +29,7 @@ service cloud.firestore {
       }
       
       match /connections/{connectionId} {
-        allow read: if isCompanyMember(companyId);
-        allow write: if false; // connections managed via functions
+        allow read, write: if isCompanyMember(companyId);
       }
       
       match /documents/{docId} {

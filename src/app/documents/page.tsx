@@ -72,6 +72,9 @@ export default function DocumentsPage() {
                     <Link href="/documents" className="block bg-blue-50 text-blue-700 px-4 py-3 rounded-lg font-medium transition">
                         Documents
                     </Link>
+                    <Link href="/settings/connections" className="block text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">
+                        Connections
+                    </Link>
                 </nav>
             </aside>
 
@@ -118,9 +121,9 @@ export default function DocumentsPage() {
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(doc.status)}`}>
                                             {doc.status.replace("_", " ")}
                                         </span>
-                                        <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline font-medium">
-                                            View File
-                                        </a>
+                                        <Link href={`/documents/${doc.id}`} className="text-sm text-blue-600 hover:underline font-medium">
+                                            View Details
+                                        </Link>
                                     </div>
                                 </li>
                             ))

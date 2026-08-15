@@ -2,10 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { uploadBytesResumable, getDownloadURL, ref } from "firebase/storage";
-import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, setDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { storage, db } from "@/lib/firebase/config";
 import { useAuth } from "@/components/providers/auth-provider";
 import { DocumentEntry } from "@/lib/types/schema";
+import { extractDocument } from "@/app/actions/extract";
+import { computeContentHash } from "@/lib/utils/fingerprint";
 
 export function UploadZone() {
     const { user, companyId } = useAuth();
@@ -49,30 +51,67 @@ export function UploadZone() {
             },
             async () => {
                 const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-
-                const newDoc: DocumentEntry = {
-                    id: docId,
-                    companyId,
-                    // Simple classification for MVP
-                    type: file.type === "application/pdf" ? "invoice" : "receipt",
-                    status: "processing",
-                    uploadedBy: user.uid,
-                    fileName: file.name,
-                    fileUrl: downloadUrl,
-                    storagePath: storagePath,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                };
+                const docType = file.type === "application/pdf" ? "invoice" : "receipt";
 
                 try {
+                    // 1. Send it to Gemini via Server Action
+                    const extraction = await extractDocument({ fileUrl: downloadUrl, type: docType });
+
+                    if (!extraction.success || !extraction.data) {
+                        throw new Error(extraction.error || "Extraction failed");
+                    }
+
+                    // 2. Compute fingerprint
+                    const contentHash = await computeContentHash(extraction.data);
+
+                    // 3. Check for duplicates in this company
+                    const duplicatesQuery = query(
+                        collection(db, "companies", companyId, "documents"),
+                        where("contentHash", "==", contentHash)
+                    );
+
+                    const duplicatesSnap = await getDocs(duplicatesQuery);
+                    const isDuplicate = !duplicatesSnap.empty;
+
+                    // 4. Construct final Document Entry
+                    const newDoc: DocumentEntry = {
+                        id: docId,
+                        companyId,
+                        type: docType,
+                        status: isDuplicate ? "possible_duplicate" : "ready",
+                        uploadedBy: user.uid,
+                        fileName: file.name,
+                        fileUrl: downloadUrl,
+                        storagePath: storagePath,
+                        extractionResult: extraction.data,
+                        contentHash: contentHash,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    };
+
                     await setDoc(doc(db, "companies", companyId, "documents", docId), newDoc);
                     setUploading(false);
                     setProgress(0);
-                    alert("Document uploaded successfully!");
+                    alert(`Document processed successfully! ${isDuplicate ? "(Warning: Possible Duplicate)" : ""}`);
                 } catch (error) {
-                    console.error("Failed to save document entry", error);
+                    console.error("Failed to process document entry", error);
                     setUploading(false);
-                    alert("Upload finished, but saving to database failed.");
+                    alert("Upload finished, but extraction/saving failed.");
+
+                    // Fallback save exactly as it was
+                    const fallbackDoc: DocumentEntry = {
+                        id: docId,
+                        companyId,
+                        type: docType,
+                        status: "error",
+                        uploadedBy: user.uid,
+                        fileName: file.name,
+                        fileUrl: downloadUrl,
+                        storagePath: storagePath,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    };
+                    await setDoc(doc(db, "companies", companyId, "documents", docId), fallbackDoc);
                 }
             }
         );
