@@ -40,7 +40,7 @@ describe("createCompany Firebase Function", () => {
     it("should require necessary fields provided by payload", async () => {
         const wrapped = testEnv.wrap(createCompany);
         const auth = { uid: "user123", token: { email: "test@example.com" } };
-        await expect(wrapped({ data: {} } as any, { auth } as any))
+        await expect(wrapped({ data: {}, auth } as any))
             .rejects.toThrow("Missing required fields.");
     });
 
@@ -49,7 +49,7 @@ describe("createCompany Firebase Function", () => {
         const data = { name: "Test Corp", country: "US", currency: "USD" };
         const auth = { uid: "user123", token: { email: "test@example.com" } };
 
-        const result = await wrapped({ data } as any, { auth } as any);
+        const result = await wrapped({ data, auth } as any);
         expect(result.success).toBe(true);
         expect(result.companyId).toBeDefined();
 
@@ -77,11 +77,11 @@ describe("createCompany Firebase Function", () => {
         const auth = { uid: "user123", token: { email: "test@example.com" } };
 
         // First successful request
-        await wrapped({ data: { name: "First Corp", country: "US", currency: "USD" } } as any, { auth } as any);
+        await wrapped({ data: { name: "First Corp", country: "US", currency: "USD" }, auth } as any);
 
         // Second request should fail by security guard
         const data2 = { name: "Second Corp", country: "PK", currency: "PKR" };
-        await expect(wrapped({ data: data2 } as any, { auth } as any))
+        await expect(wrapped({ data: data2, auth } as any))
             .rejects.toThrow("User is already associated with a company.");
     });
 });
