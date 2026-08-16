@@ -18,14 +18,12 @@ export default function DashboardPage() {
     const [needsCompany, setNeedsCompany] = useState(false);
 
     const [companyName, setCompanyName] = useState("");
-    const [country, setCountry] = useState("US");
-    const [currency, setCurrency] = useState("USD");
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState("");
 
     const [stats, setStats] = useState({ processed: 0, needsAction: 0, totalSpend: 0 });
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [recentDocs, setRecentDocs] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<{ date: string; processed: number }[]>([]);
+    const [recentDocs, setRecentDocs] = useState<{ id: string; status: string; fileName: string; createdAt: { toDate?: () => Date } | null }[]>([]);
     const [loadingStats, setLoadingStats] = useState(true);
 
     useEffect(() => {
@@ -65,7 +63,7 @@ export default function DashboardPage() {
             let processed = 0;
             let needsAction = 0;
             let totalSpend = 0;
-            const recent: any[] = [];
+            const recent: { id: string; status: string; fileName: string; createdAt: { toDate?: () => Date } | null }[] = [];
 
             const daysMap: Record<string, number> = {};
             for (let i = 6; i >= 0; i--) {
@@ -76,7 +74,14 @@ export default function DashboardPage() {
 
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
-                if (recent.length < 5) recent.push({ id: docSnap.id, ...data });
+                if (recent.length < 5) {
+                    recent.push({
+                        id: docSnap.id,
+                        status: data.status || "unknown",
+                        fileName: data.fileName || "Unknown File",
+                        createdAt: data.createdAt || null
+                    });
+                }
 
                 if (data.status === "posted") {
                     processed++;
@@ -116,8 +121,6 @@ export default function DashboardPage() {
 
             batch.set(companyRef, {
                 name: companyName,
-                country,
-                currency,
                 createdAt: serverTimestamp()
             });
 
@@ -309,8 +312,8 @@ export default function DashboardPage() {
                                                 <div className="flex items-start justify-between p-3 rounded-lg hover:bg-gray-50 transition border border-transparent group-hover:border-gray-100">
                                                     <div className="flex items-center space-x-3">
                                                         <div className={`p-2 rounded-full ${doc.status === 'posted' ? 'bg-green-100 text-green-600' :
-                                                                doc.status === 'ready' ? 'bg-orange-100 text-orange-600' :
-                                                                    'bg-gray-100 text-gray-600'
+                                                            doc.status === 'ready' ? 'bg-orange-100 text-orange-600' :
+                                                                'bg-gray-100 text-gray-600'
                                                             }`}>
                                                             {doc.status === 'posted' ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                                                         </div>
