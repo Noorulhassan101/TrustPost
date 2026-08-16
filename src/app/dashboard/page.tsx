@@ -1,18 +1,32 @@
 "use client";
 
 import { useAuth } from "@/components/providers/auth-provider";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { LogOut, LayoutDashboard, FileText, Settings, Activity, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Activity, CheckCircle, Clock, AlertCircle, Zap, ArrowRight } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { doc, getDoc, collection, writeBatch, serverTimestamp, query, orderBy, onSnapshot } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { AppShell } from "@/components/layout/AppShell";
+import { Card } from "@/components/ui/Card";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
 
 export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[var(--background)]"><Spinner /></div>}>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+
+function DashboardContent() {
     const { user, companyId, loading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const plan = searchParams.get("plan");
 
     const [verifying, setVerifying] = useState(true);
     const [needsCompany, setNeedsCompany] = useState(false);
@@ -111,6 +125,12 @@ export default function DashboardPage() {
 
     const handleCreateCompany = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!plan || (plan !== "free" && plan !== "pro")) {
+            setError("You must select a valid pricing plan before creating a workspace.");
+            return;
+        }
+
         setProcessing(true);
         setError("");
 
@@ -119,26 +139,18 @@ export default function DashboardPage() {
             const companyRef = doc(collection(db, "companies"));
             const newCompanyId = companyRef.id;
 
-            batch.set(companyRef, {
-                name: companyName,
-                createdAt: serverTimestamp()
-            });
-
+            batch.set(companyRef, { name: companyName, planTier: plan, createdAt: serverTimestamp() });
             batch.set(doc(db, "companies", newCompanyId, "members", user!.uid), {
-                uid: user!.uid,
-                role: "admin",
-                joinedAt: serverTimestamp()
+                uid: user!.uid, role: "admin", joinedAt: serverTimestamp()
             });
-
             batch.set(doc(db, "users", user!.uid), {
-                email: user!.email,
-                name: user!.displayName || "Unknown User",
-                companyId: newCompanyId,
-                updatedAt: serverTimestamp()
+                email: user!.email, name: user!.displayName || "Unknown User",
+                companyId: newCompanyId, updatedAt: serverTimestamp()
             }, { merge: true });
 
             await batch.commit();
-            window.location.reload();
+            // eslint-disable-next-line
+            window.location.assign("/dashboard");
         } catch (err: unknown) {
             console.error(err);
             setError((err as Error).message || "Failed to create workspace");
@@ -147,14 +159,10 @@ export default function DashboardPage() {
         }
     };
 
-    const handleSignOut = async () => {
-        await signOut(auth);
-    };
-
     if (loading || verifying) {
         return (
-            <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-500">
-                <Spinner />
+            <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+                <div className="w-8 h-8 border-[3px] border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin" />
             </div>
         );
     }
@@ -163,38 +171,56 @@ export default function DashboardPage() {
 
     if (needsCompany) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-                <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Complete Setup</h2>
-                    <p className="text-sm text-gray-600 mb-6">You signed in with Google! Let&apos;s get your workspace set up.</p>
+            <div className="flex h-screen w-full items-center justify-center bg-[var(--background)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
+                <div className="absolute top-20 right-20 w-20 h-20 rounded-full bg-[var(--secondary)]/15 animate-float" />
+                <div className="absolute bottom-20 left-20 w-14 h-14 bg-[var(--tertiary)]/20 rotate-45 animate-float" style={{ animationDelay: "2s" }} />
+
+                <div className="w-full max-w-md bg-[var(--card)] p-8 rounded-[var(--radius-lg)] border-[2px] border-[var(--foreground)] shadow-pop relative z-10 animate-fade-in">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-pop">
+                            <Zap className="w-5 h-5 text-white" strokeWidth={2.5} />
+                        </div>
+                        <h2 className="text-xl font-extrabold text-[var(--foreground)]" style={{ fontFamily: "var(--font-heading)" }}>Complete Setup</h2>
+                    </div>
+                    <p className="text-sm text-[var(--muted-foreground)] mb-6">You signed in with Google! Let&apos;s get your workspace set up.</p>
 
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm border border-red-200">
+                        <div className="mb-4 p-3 bg-[var(--destructive)]/10 text-[var(--destructive)] rounded-[var(--radius-sm)] text-sm border-[2px] border-[var(--destructive)]/30 font-medium">
                             {error}
                         </div>
                     )}
 
-                    <form onSubmit={handleCreateCompany} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Workspace Name</label>
-                            <input
-                                type="text"
-                                value={companyName}
-                                onChange={(e) => setCompanyName(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-900"
-                                required
-                                placeholder="Acme Corp"
-                            />
+                    {(!plan || (plan !== "free" && plan !== "pro")) ? (
+                        <div className="text-center bg-[var(--muted)]/50 p-6 rounded-[var(--radius-md)] border-[2px] border-dashed border-[var(--border)] mb-4">
+                            <h3 className="font-bold text-[var(--foreground)] mb-2">No Plan Selected</h3>
+                            <p className="text-[var(--muted-foreground)] text-sm mb-4">You must choose a subscription plan before joining EntryAI.</p>
+                            <Link href="/#pricing" className="block w-full">
+                                <Button className="w-full shadow-pop hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-pop-hover active:translate-y-0.5 active:translate-x-0.5 active:shadow-pop-active transition-all" style={{ transitionTimingFunction: "var(--bounce)" }}>
+                                    View Pricing Plans
+                                </Button>
+                            </Link>
                         </div>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full mt-4 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition"
-                        >
-                            {processing ? "Creating Workspace..." : "Create Workspace"}
-                        </button>
-                    </form>
-                    <button onClick={handleSignOut} className="mt-4 text-sm text-gray-500 hover:text-gray-700 w-full text-center">
+                    ) : (
+                        <form onSubmit={handleCreateCompany} className="space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] mb-1.5">Workspace Name</label>
+                                <input
+                                    type="text"
+                                    value={companyName}
+                                    onChange={(e) => setCompanyName(e.target.value)}
+                                    className="w-full px-4 py-2.5 border-[2px] border-[#CBD5E1] rounded-[var(--radius-md)] focus:border-[var(--accent)] focus:shadow-pop focus:outline-none bg-[var(--input)] text-[var(--foreground)] font-medium text-sm transition-all"
+                                    required
+                                    placeholder="Acme Corp"
+                                />
+                            </div>
+                            <Button type="submit" disabled={processing} className="w-full">
+                                {processing ? "Creating Workspace..." : `Create Workspace (${plan.toUpperCase()} Plan)`}
+                                <ArrowRight className="w-4 h-4" />
+                            </Button>
+                        </form>
+                    )}
+                    <button onClick={() => signOut(auth)} className="mt-4 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] w-full text-center font-medium transition">
                         Sign out and try a different account
                     </button>
                 </div>
@@ -202,158 +228,118 @@ export default function DashboardPage() {
         );
     }
 
+    const kpiCards = [
+        { label: "Documents Processed", value: stats.processed, icon: CheckCircle, bg: "bg-[var(--quaternary)]/12", iconColor: "text-[#059669]" },
+        { label: "Action Required", value: stats.needsAction, icon: AlertCircle, bg: "bg-[var(--tertiary)]/12", iconColor: "text-[#B45309]" },
+        { label: "Total Verified Spend", value: `$${stats.totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: Activity, bg: "bg-[var(--accent)]/10", iconColor: "text-[var(--accent)]", isMoney: true },
+    ];
+
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* SAAS Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">TrustPost</h1>
+        <AppShell title={`Welcome back, ${user.displayName || user.email}`} subtitle="Here is the latest snapshot of your automated accounting.">
+            {loadingStats ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="w-8 h-8 border-[3px] border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin" />
                 </div>
-                <nav className="mt-2 px-4 space-y-1 flex-1">
-                    <Link href="/dashboard" className="flex items-center space-x-3 bg-blue-50 text-blue-700 px-4 py-3 rounded-lg font-medium transition">
-                        <LayoutDashboard className="w-5 h-5" />
-                        <span>Dashboard</span>
-                    </Link>
-                    <Link href="/documents" className="flex items-center space-x-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">
-                        <FileText className="w-5 h-5" />
-                        <span>Documents</span>
-                    </Link>
-                    <Link href="/settings/connections" className="flex items-center space-x-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">
-                        <Settings className="w-5 h-5" />
-                        <span>Connections</span>
-                    </Link>
-                </nav>
-            </aside>
-
-            {/* Dashboard Content */}
-            <main className="flex-1 p-8 overflow-y-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 className="text-2xl font-semibold text-gray-900">Welcome back, {user.displayName || user.email}</h2>
-                        <p className="text-gray-500 mt-1">Here is the latest snapshot of your automated accounting.</p>
+            ) : (
+                <div className="space-y-6 animate-fade-in">
+                    {/* KPI Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {kpiCards.map((kpi) => (
+                            <Card key={kpi.label} variant="sticker">
+                                <div className="p-6 flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-[var(--muted-foreground)] text-xs font-bold uppercase tracking-widest mb-2">{kpi.label}</h3>
+                                        <p className={`text-3xl font-extrabold text-[var(--foreground)] ${kpi.isMoney ? "tabular-nums" : ""}`} style={{ fontFamily: "var(--font-heading)" }}>
+                                            {kpi.value}
+                                        </p>
+                                    </div>
+                                    <div className={`p-3 rounded-[var(--radius-md)] ${kpi.bg}`}>
+                                        <kpi.icon className={`w-6 h-6 ${kpi.iconColor}`} strokeWidth={2.5} />
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
                     </div>
-                    <button
-                        onClick={handleSignOut}
-                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 bg-white border border-gray-200 px-4 py-2 rounded-lg transition"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign out</span>
-                    </button>
-                </div>
 
-                {loadingStats ? (
-                    <div className="flex justify-center items-center h-64"><Spinner /></div>
-                ) : (
-                    <div className="space-y-6">
-                        {/* Metrics Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-gray-500 text-sm font-medium mb-1">Documents Processed</h3>
-                                    <p className="text-3xl font-bold text-gray-900">{stats.processed}</p>
-                                </div>
-                                <div className="p-3 bg-green-100 rounded-lg">
-                                    <CheckCircle className="w-6 h-6 text-green-600" />
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-gray-500 text-sm font-medium mb-1">Action Required</h3>
-                                    <p className="text-3xl font-bold text-gray-900">{stats.needsAction}</p>
-                                </div>
-                                <div className="p-3 bg-orange-100 rounded-lg">
-                                    <AlertCircle className="w-6 h-6 text-orange-600" />
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-gray-500 text-sm font-medium mb-1">Total Verified Spend</h3>
-                                    <p className="text-3xl font-bold text-gray-900">
-                                        ${stats.totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-                                <div className="p-3 bg-blue-100 rounded-lg">
-                                    <Activity className="w-6 h-6 text-blue-600" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Chart & Recent Activity */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Chart */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm lg:col-span-2">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-6">Processing Volume (Last 7 Days)</h3>
+                    {/* Chart + Recent Activity */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <Card variant="document" className="lg:col-span-2">
+                            <div className="p-6">
+                                <h3 className="text-lg font-bold text-[var(--foreground)] mb-6" style={{ fontFamily: "var(--font-heading)" }}>Processing Volume (Last 7 Days)</h3>
                                 <div className="h-72 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                                            <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
-                                            <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dx={-10} />
+                                            <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
+                                            <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dx={-10} />
                                             <Tooltip
-                                                cursor={{ fill: '#F3F4F6' }}
-                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                cursor={{ fill: 'rgba(139, 92, 246, 0.05)' }}
+                                                contentStyle={{ borderRadius: '16px', border: '2px solid #E2E8F0', boxShadow: '4px 4px 0px #E2E8F0', fontFamily: 'var(--font-body)' }}
                                             />
-                                            <Bar dataKey="processed" name="Invoices Processed" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="processed" name="Invoices Processed" fill="#8B5CF6" radius={[8, 8, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
                             </div>
+                        </Card>
 
-                            {/* Recent Activity */}
-                            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-                                <div className="space-y-4">
+                        <Card variant="document">
+                            <div className="p-6">
+                                <h3 className="text-lg font-bold text-[var(--foreground)] mb-4" style={{ fontFamily: "var(--font-heading)" }}>Recent Activity</h3>
+                                <div className="space-y-3">
                                     {recentDocs.length === 0 ? (
-                                        <div className="text-center py-8 text-gray-400 text-sm">
+                                        <div className="text-center py-8 text-[var(--muted-foreground)] text-sm">
+                                            <div className="flex items-center justify-center gap-2 mb-2 text-[var(--muted-foreground)]/40">
+                                                <div className="w-4 h-4 rounded-full bg-[var(--secondary)]/20" />
+                                                <div className="w-4 h-4 bg-[var(--tertiary)]/20 rotate-45" />
+                                                <div className="w-4 h-4 rounded-full bg-[var(--quaternary)]/20" />
+                                            </div>
                                             No documents uploaded yet.
                                         </div>
                                     ) : (
-                                        recentDocs.map(doc => (
-                                            <Link key={doc.id} href={`/documents/${doc.id}`} className="block group">
-                                                <div className="flex items-start justify-between p-3 rounded-lg hover:bg-gray-50 transition border border-transparent group-hover:border-gray-100">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className={`p-2 rounded-full ${doc.status === 'posted' ? 'bg-green-100 text-green-600' :
-                                                            doc.status === 'ready' ? 'bg-orange-100 text-orange-600' :
-                                                                'bg-gray-100 text-gray-600'
+                                        recentDocs.map(d => (
+                                            <Link key={d.id} href={`/documents/${d.id}`} className="block group">
+                                                <div className="flex items-center justify-between p-3 rounded-[var(--radius-sm)] hover:bg-[var(--muted)] transition-all border-[2px] border-transparent group-hover:border-[var(--border)]">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2 rounded-full ${d.status === 'posted' ? 'bg-[var(--quaternary)]/12 text-[#059669]' :
+                                                            d.status === 'ready' ? 'bg-[var(--tertiary)]/12 text-[#B45309]' :
+                                                                'bg-[var(--muted)] text-[var(--muted-foreground)]'
                                                             }`}>
-                                                            {doc.status === 'posted' ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                                            {d.status === 'posted' ? <CheckCircle className="w-4 h-4" strokeWidth={2.5} /> : <Clock className="w-4 h-4" strokeWidth={2.5} />}
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-medium text-gray-900 truncate w-32">{doc.fileName}</p>
-                                                            <p className="text-xs text-gray-500 capitalize">{doc.status}</p>
+                                                            <p className="text-sm font-semibold text-[var(--foreground)] truncate w-28">{d.fileName}</p>
+                                                            <StatusBadge status={d.status} />
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs text-gray-400">
-                                                            {(() => {
-                                                                const ts = doc.createdAt as { toDate?: () => Date } | null;
-                                                                return ts && typeof ts.toDate === "function" ? ts.toDate().toLocaleDateString() : 'Just now';
-                                                            })()}
-                                                        </p>
-                                                    </div>
+                                                    <p className="text-[10px] text-[var(--muted-foreground)]">
+                                                        {(() => {
+                                                            const ts = d.createdAt as { toDate?: () => Date } | null;
+                                                            return ts && typeof ts.toDate === "function" ? ts.toDate().toLocaleDateString() : "Just now";
+                                                        })()}
+                                                    </p>
                                                 </div>
                                             </Link>
                                         ))
                                     )}
                                 </div>
-                                <div className="mt-6 pt-4 border-t border-gray-100">
-                                    <Link href="/documents" className="text-sm text-blue-600 font-medium hover:text-blue-700 flex items-center justify-center">
-                                        View all documents
+                                <div className="mt-4 pt-4 border-t-[2px] border-[var(--border)]">
+                                    <Link href="/documents" className="text-sm text-[var(--accent)] font-bold hover:underline flex items-center justify-center gap-1">
+                                        View all documents <ArrowRight className="w-3.5 h-3.5" />
                                     </Link>
                                 </div>
                             </div>
-                        </div>
+                        </Card>
                     </div>
-                )}
-            </main>
-        </div>
+                </div>
+            )}
+        </AppShell>
     );
 }
 
 function Spinner() {
     return (
-        <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-    )
+        <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-[3px] border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin" />
+        </div>
+    );
 }

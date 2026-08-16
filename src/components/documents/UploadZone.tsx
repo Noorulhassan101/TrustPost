@@ -8,6 +8,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { DocumentEntry } from "@/lib/types/schema";
 import { extractDocument } from "@/app/actions/extract";
 import { computeContentHash } from "@/lib/utils/fingerprint";
+import { UploadCloud } from "lucide-react";
 
 export function UploadZone() {
     const { user, companyId } = useAuth();
@@ -54,17 +55,13 @@ export function UploadZone() {
                 const docType = file.type === "application/pdf" ? "invoice" : "receipt";
 
                 try {
-                    // 1. Send it to Gemini via Server Action
                     const extraction = await extractDocument({ fileUrl: downloadUrl, type: docType });
 
                     if (!extraction.success || !extraction.data) {
                         throw new Error(extraction.error || "Extraction failed");
                     }
 
-                    // 2. Compute fingerprint
                     const contentHash = await computeContentHash(extraction.data);
-
-                    // 3. Check for duplicates in this company
                     const duplicatesQuery = query(
                         collection(db, "companies", companyId, "documents"),
                         where("contentHash", "==", contentHash)
@@ -73,7 +70,6 @@ export function UploadZone() {
                     const duplicatesSnap = await getDocs(duplicatesQuery);
                     const isDuplicate = !duplicatesSnap.empty;
 
-                    // 4. Construct final Document Entry
                     const newDoc: DocumentEntry = {
                         id: docId,
                         companyId,
@@ -98,7 +94,6 @@ export function UploadZone() {
                     setUploading(false);
                     alert("Upload finished, but extraction/saving failed.");
 
-                    // Fallback save exactly as it was
                     const fallbackDoc: DocumentEntry = {
                         id: docId,
                         companyId,
@@ -120,7 +115,6 @@ export function UploadZone() {
     const onDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             handleUpload(e.dataTransfer.files[0]);
         }
@@ -131,22 +125,23 @@ export function UploadZone() {
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
             onDrop={onDrop}
-            style={{
-                border: `2px dashed ${isDragOver ? '#0070f3' : '#ccc'}`,
-                padding: '2rem',
-                textAlign: 'center',
-                borderRadius: '8px',
-                backgroundColor: isDragOver ? '#f0f8ff' : '#fafafa',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                position: 'relative'
-            }}
             onClick={() => document.getElementById("file-upload")?.click()}
+            className={`
+                relative cursor-pointer
+                border-[2px] border-dashed rounded-[var(--radius-md)]
+                p-8 text-center
+                transition-all duration-200
+                ${isDragOver
+                    ? "border-[var(--accent)] bg-[var(--accent)]/5 scale-[1.01]"
+                    : "border-[var(--border)] bg-[var(--muted)]/30 hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/3"
+                }
+            `.trim()}
+            style={{ transitionTimingFunction: "var(--bounce)" }}
         >
             <input
                 id="file-upload"
                 type="file"
-                style={{ display: "none" }}
+                className="hidden"
                 accept=".pdf,image/jpeg,image/png"
                 onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
@@ -156,13 +151,25 @@ export function UploadZone() {
             />
 
             {uploading ? (
-                <div style={{ color: '#0070f3', fontWeight: 'bold' }}>
-                    Uploading... {progress}%
+                <div className="space-y-3">
+                    <div className="w-10 h-10 border-[3px] border-[var(--accent)]/20 border-t-[var(--accent)] rounded-full animate-spin mx-auto" />
+                    <p className="text-sm font-bold text-[var(--accent)]">Uploading... {progress}%</p>
+                    <div className="w-full max-w-xs mx-auto bg-[var(--muted)] rounded-full h-2 overflow-hidden">
+                        <div
+                            className="h-full bg-[var(--accent)] rounded-full transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
                 </div>
             ) : (
-                <div>
-                    <h3 style={{ margin: '0 0 0.5rem', color: '#333' }}>Drag & Drop to Upload</h3>
-                    <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
+                <div className="space-y-2">
+                    <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mx-auto mb-3">
+                        <UploadCloud className="w-6 h-6 text-[var(--accent)]" strokeWidth={2.5} />
+                    </div>
+                    <h3 className="text-sm font-bold text-[var(--foreground)]" style={{ fontFamily: "var(--font-heading)" }}>
+                        Drag & Drop to Upload
+                    </h3>
+                    <p className="text-xs text-[var(--muted-foreground)]">
                         Supports PDF, JPG, PNG (Max 10MB)
                     </p>
                 </div>

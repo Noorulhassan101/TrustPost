@@ -1,26 +1,162 @@
 @import "tailwindcss";
 
+/* ============================================
+   Playful Geometric Design System — Tokens
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --- Colors (Light Mode) --- */
+  --background: #FFFDF5;
+  --foreground: #1E293B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #8B5CF6;
+  --accent-foreground: #FFFFFF;
+  --secondary: #F472B6;
+  --tertiary: #FBBF24;
+  --quaternary: #34D399;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: #FFFFFF;
+  --card: #FFFFFF;
+  --ring: #8B5CF6;
+
+  /* --- Radius --- */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* --- Chunky Border --- */
+  --border-width: 2px;
+
+  /* --- Hard Shadows --- */
+  --shadow-pop: 4px 4px 0px 0px #1E293B;
+  --shadow-pop-hover: 6px 6px 0px 0px #1E293B;
+  --shadow-pop-active: 2px 2px 0px 0px #1E293B;
+  --shadow-pop-card: 8px 8px 0px 0px #E2E8F0;
+  --shadow-pop-featured: 8px 8px 0px 0px #F472B6;
+
+  /* --- Transition --- */
+  --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* --- Tailwind v4 Theme Binding --- */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --color-quaternary: var(--quaternary);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-card: var(--card);
+  --color-ring: var(--ring);
+  --font-heading: "Outfit", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* --- Base Styles --- */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* --- Tabular Numerals (financial figures) --- */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Hard Shadow Utilities --- */
+.shadow-pop {
+  box-shadow: var(--shadow-pop);
+}
+.shadow-pop-hover {
+  box-shadow: var(--shadow-pop-hover);
+}
+.shadow-pop-active {
+  box-shadow: var(--shadow-pop-active);
+}
+.shadow-pop-card {
+  box-shadow: var(--shadow-pop-card);
+}
+.shadow-pop-featured {
+  box-shadow: var(--shadow-pop-featured);
+}
+
+/* --- Animations --- */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  75% { transform: rotate(-3deg); }
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0); opacity: 0; }
+  80% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-slide-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(3deg); }
+}
+
+.animate-wiggle:hover {
+  animation: wiggle 0.4s ease-in-out;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.4s var(--bounce) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-slide-in 0.2s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- Dot Grid Pattern (for decorative backgrounds) --- */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* --- Focus Ring --- */
+*:focus-visible {
+  outline: var(--border-width) solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-pop);
+}
+
+/* --- Scrollbar Hiding --- */
+.hidden-scrollbar::-webkit-scrollbar { display: none; }
+.hidden-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

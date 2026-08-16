@@ -3,14 +3,15 @@
 import { useAuth } from "@/components/providers/auth-provider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Save, CheckCircle2 } from "lucide-react";
-import { auth, db } from "@/lib/firebase/config";
-import { signOut } from "firebase/auth";
+import { Save, CheckCircle2, LinkIcon } from "lucide-react";
+import { db } from "@/lib/firebase/config";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import Link from "next/link";
+import { AppShell } from "@/components/layout/AppShell";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 export default function ConnectionsSettingsPage() {
-    const { user, companyId, loading } = useAuth();
+    const { user, companyId, planTier, loading } = useAuth();
     const router = useRouter();
     const [sheetId, setSheetId] = useState("");
     const [saving, setSaving] = useState(false);
@@ -18,9 +19,7 @@ export default function ConnectionsSettingsPage() {
     const [initialLoad, setInitialLoad] = useState(true);
 
     useEffect(() => {
-        if (!loading && !user) {
-            router.push("/login");
-        }
+        if (!loading && !user) router.push("/login");
     }, [user, loading, router]);
 
     useEffect(() => {
@@ -40,10 +39,6 @@ export default function ConnectionsSettingsPage() {
         }
         fetchConnection();
     }, [companyId]);
-
-    const handleSignOut = async () => {
-        await signOut(auth);
-    };
 
     const handleSave = async () => {
         if (!companyId) return;
@@ -66,86 +61,98 @@ export default function ConnectionsSettingsPage() {
         }
     };
 
-    if (loading || (!user && loading) || initialLoad) return <div className="flex h-screen items-center justify-center">Loading...</div>;
-    if (!user || !companyId) return <div className="flex h-screen items-center justify-center">Please verify account first on dashboard.</div>;
+    if (loading || (!user && loading) || initialLoad) return <div className="flex h-screen items-center justify-center bg-[var(--background)] text-[var(--muted-foreground)]">Loading...</div>;
+    if (!user || !companyId) return <div className="flex h-screen items-center justify-center bg-[var(--background)] text-[var(--muted-foreground)]">Please verify account first on dashboard.</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            <aside className="w-64 bg-white border-r border-gray-200">
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold text-gray-900">EntryAI</h1>
-                </div>
-                <nav className="mt-6 px-4 space-y-2">
-                    <Link href="/dashboard" className="block text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">
-                        Dashboard
-                    </Link>
-                    <Link href="/documents" className="block text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg font-medium transition">
-                        Documents
-                    </Link>
-                    <Link href="/settings/connections" className="block bg-blue-50 text-blue-700 px-4 py-3 rounded-lg font-medium transition">
-                        Connections
-                    </Link>
-                </nav>
-            </aside>
-
-            <main className="flex-1 p-8">
-                <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold text-gray-800">Connections</h2>
-                    <button
-                        onClick={handleSignOut}
-                        className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 bg-white border border-gray-200 px-4 py-2 rounded-lg"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sign out</span>
-                    </button>
-                </div>
-
-                <div className="max-w-3xl bg-white p-8 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div className="flex items-center mb-6">
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                            <span className="text-2xl">📊</span>
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-bold text-gray-900">Google Sheets Integration</h3>
-                            <p className="text-gray-500">Automatically post verified invoices to a Google Sheet.</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Target Spreadsheet ID</label>
-                            <input
-                                type="text"
-                                value={sheetId}
-                                onChange={(e) => setSheetId(e.target.value)}
-                                placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 font-mono text-sm"
-                            />
-                            <p className="mt-2 text-xs text-gray-500">
-                                You can find the Spreadsheet ID in your Google Sheets URL: <br />
-                                <code>.../d/<b>[this-is-the-spreadsheet-id]</b>/edit</code>
-                            </p>
+        <AppShell title="Connect System" subtitle="Connect your accounting system to automatically post verified invoices.">
+            <div className="max-w-3xl space-y-6">
+                <Card variant="sticker">
+                    <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
+                        <div className="md:w-1/3">
+                            <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[#E8F0FE] flex items-center justify-center mb-4 border-[2px] border-[#4285F4]/30 shadow-pop">
+                                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" fill="#34A853" />
+                                    <path d="M14 2V8H20" fill="#188038" />
+                                    <path d="M8 13H16V15H8V13Z" fill="white" />
+                                    <path d="M8 17H12V19H8V17Z" fill="white" />
+                                </svg>
+                            </div>
+                            <h3 className="text-base font-extrabold text-[var(--foreground)] mb-2" style={{ fontFamily: "var(--font-heading)" }}>Google Sheets Sync</h3>
+                            <p className="text-sm text-[var(--muted-foreground)]">Automatically push your verified document extractions as new rows in your ledger.</p>
                         </div>
 
-                        <div className="flex items-center gap-4 pt-4">
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                            >
-                                <Save className="w-4 h-4" />
-                                {saving ? "Saving..." : "Save Connection"}
-                            </button>
-                            {saved && (
-                                <span className="flex items-center text-sm font-medium text-green-600">
-                                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                                    Saved successfully
-                                </span>
-                            )}
+                        <div className="md:w-2/3 space-y-4">
+                            <div>
+                                <label className="block text-[11px] font-bold uppercase tracking-widest text-[var(--muted-foreground)] mb-1.5 flex items-center gap-1.5">
+                                    <LinkIcon className="w-3.5 h-3.5" />
+                                    Spreadsheet ID
+                                </label>
+                                <input
+                                    type="text"
+                                    value={sheetId}
+                                    onChange={(e) => setSheetId(e.target.value)}
+                                    placeholder="1A2B3C4D5E6F7G8H9I0J..."
+                                    className="w-full px-4 py-2.5 border-[2px] border-[#CBD5E1] rounded-[var(--radius-md)] focus:border-[var(--accent)] focus:shadow-pop focus:outline-none bg-[var(--input)] text-[var(--foreground)] font-medium text-sm transition-all font-mono"
+                                />
+                                <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                                    You can find this in the URL of your Google Sheet: <code className="bg-[var(--muted)] px-1 py-0.5 rounded text-[10px]">spreadsheets/d/<b>[your-id]</b>/edit</code>
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-4 pt-2">
+                                <Button onClick={handleSave} disabled={saving}>
+                                    <Save className="w-4 h-4" />
+                                    {saving ? "Saving..." : "Save Connection"}
+                                </Button>
+                                {saved && (
+                                    <span className="flex items-center text-sm font-bold text-[#059669] animate-fade-in">
+                                        <CheckCircle2 className="w-4 h-4 mr-1.5" strokeWidth={2.5} />
+                                        Saved successfully
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
+                </Card>
+
+                {/* Future Connector Placeholders */}
+                <div className="grid grid-cols-2 gap-6 mt-6">
+                    {planTier === "free" ? (
+                        <Card variant="sticker" className="col-span-2 p-8 text-center bg-[var(--accent)]/5 border-[var(--accent)]/30 animate-fade-in">
+                            <div className="w-16 h-16 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-4 border-[2px] border-[var(--accent)] shadow-pop">
+                                <span className="text-3xl">🚀</span>
+                            </div>
+                            <h2 className="text-xl font-extrabold text-[var(--foreground)] mb-2" style={{ fontFamily: "var(--font-heading)" }}>Unlock Premium Integrations</h2>
+                            <p className="text-sm text-[var(--muted-foreground)] mb-6 max-w-md mx-auto">Export your extracted documents directly to QuickBooks Online and Tally automatically with our Pro plan.</p>
+                            <Button onClick={() => router.push('/#pricing')} className="px-8 shadow-pop hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-pop-hover active:translate-y-0.5 active:translate-x-0.5 active:shadow-pop-active transition-all" style={{ transitionTimingFunction: "var(--bounce)" }}>
+                                Upgrade to Pro
+                            </Button>
+                        </Card>
+                    ) : (
+                        <>
+                            <Card variant="sticker" className="opacity-50 pointer-events-none">
+                                <div className="p-6 text-center">
+                                    <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--secondary)]/12 flex items-center justify-center mx-auto mb-3 border-[2px] border-[var(--secondary)]/30">
+                                        <span className="text-2xl">📘</span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-[var(--foreground)]" style={{ fontFamily: "var(--font-heading)" }}>QuickBooks Online</h4>
+                                    <p className="text-xs text-[var(--muted-foreground)] mt-1">Coming soon</p>
+                                </div>
+                            </Card>
+                            <Card variant="sticker" className="opacity-50 pointer-events-none">
+                                <div className="p-6 text-center">
+                                    <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--tertiary)]/12 flex items-center justify-center mx-auto mb-3 border-[2px] border-[var(--tertiary)]/30">
+                                        <span className="text-2xl">📗</span>
+                                    </div>
+                                    <h4 className="text-sm font-bold text-[var(--foreground)]" style={{ fontFamily: "var(--font-heading)" }}>Tally</h4>
+                                    <p className="text-xs text-[var(--muted-foreground)] mt-1">Coming soon</p>
+                                </div>
+                            </Card>
+                        </>
+                    )}
                 </div>
-            </main>
-        </div>
+            </div>
+        </AppShell>
     );
 }

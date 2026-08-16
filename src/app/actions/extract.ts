@@ -10,7 +10,10 @@ Extract the following fields from this invoice image and return ONLY a valid JSO
   "invoice_date": "YYYY-MM-DD",
   "total_amount": number (just the float amount, use 0 if not found),
   "currency": "string (e.g. USD, EUR, PKR)",
-  "raw_confidence": number (your confidence in extraction accuracy, 0-1)
+  "raw_confidence": number (your confidence in extraction accuracy, 0-1),
+  "dynamic_fields": [
+    { "key": "string (name of extra field found, e.g., 'Tax', 'Contact Info')", "value": "string or number" }
+  ]
 }
 Return plain JSON with no markdown wrapping. Do not include \`\`\`json or \`\`\`.
 `;
@@ -23,7 +26,10 @@ Extract the following fields from this receipt image and return ONLY a valid JSO
   "invoice_date": "YYYY-MM-DD",
   "total_amount": number (just the float amount, use 0 if not found),
   "currency": "string (e.g. USD, EUR, PKR)",
-  "raw_confidence": number (your confidence in extraction accuracy, 0-1)
+  "raw_confidence": number (your confidence in extraction accuracy, 0-1),
+  "dynamic_fields": [
+    { "key": "string (name of extra field found, e.g., 'Tax', 'Contact Info')", "value": "string or number" }
+  ]
 }
 Return plain JSON with no markdown wrapping. Do not include \`\`\`json or \`\`\`.
 `;

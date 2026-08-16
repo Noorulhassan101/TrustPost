@@ -13,6 +13,7 @@ export interface Company {
     country: "US" | "PK";
     currency: "USD" | "PKR";
     connectedSystem?: "QBO" | "TALLY" | "SHEETS";
+    planTier?: "free" | "pro";
     createdAt: Timestamp;
 }
 
@@ -29,9 +30,10 @@ export interface ExtractionResult {
     vendor_name?: string;
     invoice_number?: string;
     invoice_date?: string;
-    total_amount?: number;
-    currency?: string;
-    raw_confidence?: number;
+    total_amount: number | null;
+    currency: string | null;
+    raw_confidence: number;
+    dynamic_fields?: { key: string; value: string | number }[];
     [key: string]: unknown;
 }
 

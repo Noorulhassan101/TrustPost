@@ -62,20 +62,25 @@ export async function postRecord(doc: DocumentEntry, spreadsheetId: string) {
         // Check if headers exist
         const checkRange = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: "A1:F1"
+            range: "A1:G1"
         });
 
         if (!checkRange.data.values || checkRange.data.values.length === 0) {
             // Document is empty, initialize headers
             await sheets.spreadsheets.values.append({
                 spreadsheetId,
-                range: "A:F",
+                range: "A:G",
                 valueInputOption: "USER_ENTERED",
                 insertDataOption: "INSERT_ROWS",
                 requestBody: {
-                    values: [["Invoice Date", "Vendor Name", "Invoice Number", "Total Amount", "Currency", "TrustPost Ref ID"]]
+                    values: [["Invoice Date", "Vendor Name", "Invoice Number", "Total Amount", "Currency", "TrustPost Ref ID", "Additional Details"]]
                 }
             });
+        }
+
+        let additionalDetails = "";
+        if (ext.dynamic_fields && ext.dynamic_fields.length > 0) {
+            additionalDetails = ext.dynamic_fields.map(f => `${f.key}: ${f.value}`).join(" | ");
         }
 
         const values = [
@@ -85,13 +90,14 @@ export async function postRecord(doc: DocumentEntry, spreadsheetId: string) {
                 ext.invoice_number || "N/A",
                 ext.total_amount || 0,
                 ext.currency || "USD",
-                doc.id // Internal unique ID reference
+                doc.id, // Internal unique ID reference
+                additionalDetails // AI extracted dynamic fields
             ]
         ];
 
         const response = await sheets.spreadsheets.values.append({
             spreadsheetId,
-            range: "A:F",
+            range: "A:G",
             valueInputOption: "USER_ENTERED",
             insertDataOption: "INSERT_ROWS",
             requestBody: { values }
