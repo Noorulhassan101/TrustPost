@@ -324,7 +324,10 @@ export default function DashboardPage() {
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-xs text-gray-400">
-                                                            {doc.createdAt?.toDate ? doc.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                                                            {(() => {
+                                                                const ts = doc.createdAt as { toDate?: () => Date } | null;
+                                                                return ts && typeof ts.toDate === "function" ? ts.toDate().toLocaleDateString() : 'Just now';
+                                                            })()}
                                                         </p>
                                                     </div>
                                                 </div>
